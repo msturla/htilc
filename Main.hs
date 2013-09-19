@@ -11,4 +11,4 @@ plainExpr = ppExpr . parseLC
 inferExpr :: String -> Doc
 inferExpr = ppTypingResult . inferType . parseLC
 
-main = print (inferExpr (expr 20))
+main = print (inferExpr (expr 21))
