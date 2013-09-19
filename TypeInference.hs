@@ -75,7 +75,7 @@ infer' (LamExp sym () exp) n = case (infer' exp n) of
 										OK (n', (removeE env' sym, LamExp sym t e', TFun t t'))
 									else
 										let freshT = TVar n'
-										in OK (n' + 1, (extendE env' sym freshT, LamExp sym freshT e', TFun freshT  t'))
+										in OK (n' + 1, (env', LamExp sym freshT e', TFun freshT  t'))
 								Error err -> Error err
 infer' (AppExp e1 e2) n = case (infer' e1 n) of
 							OK (n1, (env1, e1', t1)) ->
