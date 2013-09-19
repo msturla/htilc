@@ -51,22 +51,20 @@ infer' (IsZeroExp exp) n = case (infer' exp n) of
 									UError t1 t2 -> uError t1 t2
 							Error err -> Error err
 infer' (IfExp e1 e2 e3) n = case (infer' e1 n) of 
-							OK (n1, (env1, e1', tbool)) ->
-								case mgu [(tbool, TBool)] of
-									UOK sub -> case (infer' e2 n1) of
-										OK (n2, (env2, e2', t2)) -> case (infer' e3 n2) of
-											OK (n3, (env3, e3', t3)) ->
-												case mgu [(t2, t3)] of
-													UOK sub2 -> case unifyThreeEnvs env1 env2 env3 of
-														UOK sub3 -> let finalSub = addSubs [sub, sub2, sub3] in
-																		OK (n3,  (joinE [finalSub <.> env1, finalSub <.> env2, finalSub <.> env3],
-																		finalSub <.> (IfExp e1' e2' e3'),
-																		finalSub <.> t2))
-														UError terr1 terr2 -> uError terr1 terr2
+							OK (n1, (env1, e1', tbool)) -> case (infer' e2 n1) of
+								OK (n2, (env2, e2', t2)) -> case (infer' e3 n2) of
+									OK (n3, (env3, e3', t3)) -> case unifyThreeEnvs env1 env2 env3 of
+										UOK sub -> case mgu [(sub <.> tbool, TBool)] of
+												UOK sub2 -> case mgu [(sub <.> sub2 <.> t2, sub <.> sub2 <.> t3)] of
+													UOK sub3 -> let finalSub = addSubs [sub, sub2, sub3] in
+																	OK (n3,  (joinE [finalSub <.> env1, finalSub <.> env2, finalSub <.> env3],
+																	finalSub <.> (IfExp e1' e2' e3'),
+																	finalSub <.> t2))
 													UError terr1 terr2 -> uError terr1 terr2
-											Error err -> Error err
-										Error err -> Error err
-									UError t1 t2 -> uError t1 t2
+												UError terr1 terr2 -> uError terr1 terr2
+										UError terr1 terr2 -> uError terr1 terr2
+									Error err -> Error err
+								Error err -> Error err
 							Error err -> Error err
 infer' (LamExp sym () exp) n = case (infer' exp n) of
 								OK (n', (env', e', t')) ->
@@ -82,14 +80,14 @@ infer' (AppExp e1 e2) n = case (infer' e1 n) of
 								case (infer' e2 n1) of
 									OK (n2, (env2, e2', t2)) ->
 										let freshT = TVar n2 in
-										case mgu [(t1, TFun t2 freshT)] of 
-											UOK sub1 -> case unifyFreeVars env1 env2 of
-												UOK sub2 -> let finalSub = sub1 <.> sub2 in
+										case unifyFreeVars env1 env2 of
+										UOK sub1 -> case mgu [(sub1 <.> t1, TFun (sub1 <.> t2) freshT)] of 
+											UOK sub2 -> let finalSub = sub1 <.> sub2 in
 															OK (n2 + 1, ( joinE [finalSub <.> env1, finalSub <.> env2],
 															AppExp (finalSub <.> e1') (finalSub <.> e2'),
 															finalSub <.> freshT))
-												UError terr1 terr2  -> uError terr1 terr2
-											UError terr1 terr2 -> uError terr1 terr2
+											UError terr1 terr2  -> uError terr1 terr2
+										UError terr1 terr2 -> uError terr1 terr2
 									Error err -> Error err
 							Error err -> Error err
 
