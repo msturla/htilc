@@ -32,8 +32,18 @@ infer' (VarExp x)     n = let freshT = TVar n
 infer' ZeroExp n = OK (n, (emptyEnv, ZeroExp, TNat))
 infer' TrueExp n = OK (n, (emptyEnv, TrueExp, TBool))
 infer' FalseExp n = OK (n, (emptyEnv, FalseExp, TBool))
-infer' (SuccExp exp) n = inferPredSucc exp n
-infer' (PredExp exp) n = inferPredSucc exp n
+infer' (SuccExp exp) n = case (infer' exp n) of 
+							OK (n', (env', e', t')) ->
+								case mgu [(t', TNat)] of
+									UOK sub -> OK (n', (sub <.> env', sub <.> (SuccExp e'), TNat))
+									UError t1 t2 -> uError t1 t2
+							Error err -> Error err
+infer' (PredExp exp) n = case (infer' exp n) of 
+							OK (n', (env', e', t')) ->
+								case mgu [(t', TNat)] of
+									UOK sub -> OK (n', (sub <.> env', sub <.> (PredExp e'), TNat))
+									UError t1 t2 -> uError t1 t2
+							Error err -> Error err
 infer' (IsZeroExp exp) n = case (infer' exp n) of 
 							OK (n', (env', e', t')) ->
 								case mgu [(t', TNat)] of
@@ -102,15 +112,6 @@ unifyThreeEnvs env1 env2 env3 = case unifyFreeVars env1 env2 of
 
 unifyFreeVars :: Env -> Env -> UnifResult
 unifyFreeVars env1 env2 = mgu (getGoals env1 env2)
-
-
-
-inferPredSucc exp n = case (infer' exp n) of 
-							OK (n', (env', e', t')) ->
-								case mgu [(t', TNat)] of
-									UOK sub -> OK (n', (sub <.> env', sub <.> (SuccExp e'), TNat))
-									UError t1 t2 -> uError t1 t2
-							Error err -> Error err
 
 
 getGoals :: Env -> Env -> [UnifGoal]
