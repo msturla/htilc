@@ -47,7 +47,7 @@ infer' (PredExp exp) n = case (infer' exp n) of
 infer' (IsZeroExp exp) n = case (infer' exp n) of 
 							OK (n', (env', e', t')) ->
 								case mgu [(t', TNat)] of
-									UOK sub -> OK (n', (sub <.> env', sub <.> (SuccExp e'), TBool))
+									UOK sub -> OK (n', (sub <.> env', sub <.> (IsZeroExp e'), TBool))
 									UError t1 t2 -> uError t1 t2
 							Error err -> Error err
 infer' (IfExp e1 e2 e3) n = case (infer' e1 n) of 
